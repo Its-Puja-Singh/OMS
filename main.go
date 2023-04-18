@@ -47,6 +47,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+    fmt.Println("Connected to Database")
 
     // Create the router
     router = mux.NewRouter()
@@ -59,6 +60,8 @@ func main() {
 
     // Start the server
     log.Fatal(http.ListenAndServe(":8000", router))
+    fmt.Println("Server is started on port 8000...")
+
 }
 
 func createOrder(w http.ResponseWriter, r *http.Request) {
