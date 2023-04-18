@@ -9,6 +9,7 @@ import (
     "github.com/gorilla/mux"
     "github.com/joho/godotenv"
     "os"
+    "fmt"
 )
 
 type Order struct {
@@ -59,8 +60,7 @@ func main() {
     router.HandleFunc("/getOrdersByParams", getOrdersByStatusAndCurrency).Methods("GET")
 
     // Start the server
-    log.Fatal(http.ListenAndServe(":8000", router))
-    fmt.Println("Server is started on port 8000...")
+    http.ListenAndServe(":8000", router)
 
 }
 
