@@ -32,23 +32,6 @@ var db *sql.DB
 var router *mux.Router
 
 func main() {
-    godotenv.Load()
-
-    // Connect to the database
-    var err error
-    dbConStr := ""
-    dbHost := os.Getenv("DB_HOST")
-    dbPort := os.Getenv("DB_PORT")
-    dbUser := os.Getenv("DB_USER")
-    dbPassword := os.Getenv("DB_PASSWORD")
-    dbName := os.Getenv("DB_NAME")
-
-    dbConStr += dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" +  dbPort + ")/" + dbName
-    db, err = sql.Open("mysql", dbConStr)
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Println("Connected to Database")
 
     // Create the router
     router = mux.NewRouter()
@@ -57,6 +40,7 @@ func main() {
     router.HandleFunc("/createOrder", createOrder).Methods("POST")
     router.HandleFunc("/updateOrder", updateOrder).Methods("PUT")
     router.HandleFunc("/getOrders", getOrders).Methods("GET")
+    router.HandleFunc("/getOrdersById", getOrdersById).Methods("GET")
     router.HandleFunc("/getOrdersByParams", getOrdersByStatusAndCurrency).Methods("GET")
 
     // Start the server
@@ -116,16 +100,9 @@ func updateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func getOrders(w http.ResponseWriter, r *http.Request) {
-    // Parse the query string
-    // query := r.URL.Query()
 
     // Build the SQL query
     sql := "SELECT id, status, items, total, currency_unit FROM orders"
-
-    // // Add sorting if requested
-    // if sort := query.Get("sort"); sort != "" {
-    //     sql += " ORDER BY " + sort
-    // }
 
     // Execute the query
     rows, err := db.Query(sql)
@@ -166,12 +143,9 @@ func getOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func getOrdersById(w http.ResponseWriter, r *http.Request) {
-    id := r.URL.Query().Get("status")
-    // Parse the query string
-    // query := r.URL.Query()
-
+    id := r.URL.Query().Get("id")
     // Build the SQL query
-    sql := "SELECT id, status, items, total, currency_unit FROM orders where id = " +  id
+    sql := "SELECT id, status, items, total, currency_unit FROM orders where id = '" +  id + "'"
 
     // Execute the query
     rows, err := db.Query(sql)
@@ -182,9 +156,8 @@ func getOrdersById(w http.ResponseWriter, r *http.Request) {
     defer rows.Close()
 
     // Read the rows and convert them to orders
-    var orders []Order
+    var order Order
     for rows.Next() {
-        var order Order
         var itemsJSON []byte
         err := rows.Scan(&order.ID, &order.Status, &itemsJSON, &order.Total, &order.CurrencyUnit)
         if err != nil {
@@ -198,13 +171,11 @@ func getOrdersById(w http.ResponseWriter, r *http.Request) {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
-
-        orders = append(orders, order)
     }
 
     // Write the orders as JSON to the response
     w.Header().Set("Content-Type", "application/json")
-    err = json.NewEncoder(w).Encode(orders)
+    err = json.NewEncoder(w).Encode(order)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -268,4 +239,23 @@ func getOrdersByStatusAndCurrency(w http.ResponseWriter, r *http.Request) {
     }
     w.Header().Set("Content-Type", "application/json")
     w.Write(jsonOrders)
+}
+
+func init() {
+    godotenv.Load()
+    // Connect to the database
+    var err error
+    dbConStr := ""
+    dbHost := os.Getenv("DB_HOST")
+    dbPort := os.Getenv("DB_PORT")
+    dbUser := os.Getenv("DB_USER")
+    dbPassword := os.Getenv("DB_PASSWORD")
+    dbName := os.Getenv("DB_NAME")
+
+    dbConStr += dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" +  dbPort + ")/" + dbName
+    db, err = sql.Open("mysql", dbConStr)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("Connected to Database")
 }
